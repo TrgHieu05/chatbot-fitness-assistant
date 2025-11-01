@@ -31,6 +31,10 @@ export function MealTrackingTab({ language, t }: MealTrackingTabProps) {
   const [newMealFats, setNewMealFats] = useState<string>('');
   const [newMealType, setNewMealType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>('snack');
   const [newMealImageUrl, setNewMealImageUrl] = useState<string>('');
+  
+  // Thêm state cho upload ảnh thật
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
   const filteredMeals = mealsDatabase.filter(meal =>
     meal.name[language].toLowerCase().includes(searchQuery.toLowerCase())
@@ -49,12 +53,29 @@ export function MealTrackingTab({ language, t }: MealTrackingTabProps) {
   const totalCarbs = addedMeals.reduce((sum, meal) => sum + meal.carbs, 0);
   const totalFats = addedMeals.reduce((sum, meal) => sum + meal.fats, 0);
 
+  // Cập nhật hàm handleFileUpload để xử lý ảnh thật
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Simulate meal detection
+      setUploadedFile(file);
+      
+      // Tạo URL preview cho ảnh
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const imageUrl = event.target?.result as string;
+        setUploadedImage(imageUrl);
+        setNewMealImageUrl(imageUrl);
+      };
+      reader.readAsDataURL(file);
+      
+      // Simulate meal detection từ ảnh (trong thực tế sẽ gọi AI API)
       const randomMeal = mealsDatabase[Math.floor(Math.random() * mealsDatabase.length)];
-      addMeal(randomMeal);
+      setNewMealName(randomMeal.name[language]);
+      setNewMealCalories(randomMeal.calories.toString());
+      setNewMealProtein(randomMeal.protein.toString());
+      setNewMealCarbs(randomMeal.carbs.toString());
+      setNewMealFats(randomMeal.fats.toString());
+      setNewMealType('snack');
     }
   };
 
@@ -83,9 +104,25 @@ export function MealTrackingTab({ language, t }: MealTrackingTabProps) {
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.drawImage(video, 0, 0);
-        // Simulate meal detection
-        const randomMeal = mealsDatabase[Math.floor(Math.random() * mealsDatabase.length)];
-        addMeal(randomMeal);
+        
+        // Chuyển canvas thành blob và tạo URL
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const imageUrl = URL.createObjectURL(blob);
+            setUploadedImage(imageUrl);
+            setNewMealImageUrl(imageUrl);
+            
+            // Simulate meal detection từ ảnh camera
+            const randomMeal = mealsDatabase[Math.floor(Math.random() * mealsDatabase.length)];
+            setNewMealName(randomMeal.name[language]);
+            setNewMealCalories(randomMeal.calories.toString());
+            setNewMealProtein(randomMeal.protein.toString());
+            setNewMealCarbs(randomMeal.carbs.toString());
+            setNewMealFats(randomMeal.fats.toString());
+            setNewMealType('snack');
+          }
+        }, 'image/jpeg', 0.8);
+        
         stopCamera();
       }
     }
@@ -101,7 +138,7 @@ export function MealTrackingTab({ language, t }: MealTrackingTabProps) {
     const protein = Number(newMealProtein) || 0;
     const carbs = Number(newMealCarbs) || 0;
     const fats = Number(newMealFats) || 0;
-    const image = newMealImageUrl || 'https://via.placeholder.com/64?text=Meal';
+    const image = uploadedImage || newMealImageUrl || 'https://via.placeholder.com/64?text=Meal';
 
     const customMeal = {
       id: Date.now(),
@@ -114,7 +151,12 @@ export function MealTrackingTab({ language, t }: MealTrackingTabProps) {
       type: newMealType,
     };
     addMeal(customMeal);
+    
     // Reset form và đóng
+    resetForm();
+  };
+
+  const resetForm = () => {
     setNewMealName('');
     setNewMealCalories('');
     setNewMealProtein('');
@@ -122,6 +164,8 @@ export function MealTrackingTab({ language, t }: MealTrackingTabProps) {
     setNewMealFats('');
     setNewMealImageUrl('');
     setNewMealType('snack');
+    setUploadedImage(null);
+    setUploadedFile(null);
     setShowAddForm(false);
   };
 
@@ -146,102 +190,116 @@ export function MealTrackingTab({ language, t }: MealTrackingTabProps) {
           </Button>
         </div>
         {showAddForm && (
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Input
-              value={newMealName}
-              onChange={(e) => setNewMealName(e.target.value)}
-              placeholder={language === 'en' ? 'Meal name' : 'Tên bữa ăn'}
-              className="bg-input-background border-border text-foreground placeholder:text-foreground"
-            />
-            <Select value={newMealType} onValueChange={(v: 'breakfast' | 'lunch' | 'dinner' | 'snack') => setNewMealType(v)}>
-              <SelectTrigger className="bg-input-background border-border text-foreground">
-                <SelectValue placeholder={language === 'en' ? 'Meal type' : 'Loại bữa'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="breakfast">{language === 'en' ? 'Breakfast' : 'Sáng'}</SelectItem>
-                <SelectItem value="lunch">{language === 'en' ? 'Lunch' : 'Trưa'}</SelectItem>
-                <SelectItem value="dinner">{language === 'en' ? 'Dinner' : 'Tối'}</SelectItem>
-                <SelectItem value="snack">{language === 'en' ? 'Snack' : 'Ăn vặt'}</SelectItem>
-              </SelectContent>
-            </Select>
-            <Input
-              value={newMealCalories}
-              onChange={(e) => setNewMealCalories(e.target.value)}
-              placeholder={language === 'en' ? 'Calories' : 'Calories'}
-              type="number"
-              className="bg-input-background border-border text-foreground placeholder:text-foreground"
-            />
-            <Input
-              value={newMealProtein}
-              onChange={(e) => setNewMealProtein(e.target.value)}
-              placeholder={language === 'en' ? 'Protein (g)' : 'Protein (g)'}
-              type="number"
-              className="bg-input-background border-border text-foreground placeholder:text-foreground"
-            />
-            <Input
-              value={newMealCarbs}
-              onChange={(e) => setNewMealCarbs(e.target.value)}
-              placeholder={language === 'en' ? 'Carbs (g)' : 'Carbs (g)'}
-              type="number"
-              className="bg-input-background border-border text-foreground placeholder:text-foreground"
-            />
-            <Input
-              value={newMealFats}
-              onChange={(e) => setNewMealFats(e.target.value)}
-              placeholder={language === 'en' ? 'Fats (g)' : 'Fats (g)'}
-              type="number"
-              className="bg-input-background border-border text-foreground placeholder:text-foreground"
-            />
-            <Input
-              value={newMealImageUrl}
-              onChange={(e) => setNewMealImageUrl(e.target.value)}
-              placeholder={language === 'en' ? 'Image URL (optional)' : 'Link ảnh (tùy chọn)'}
-              className="bg-input-background border-border text-foreground placeholder:text-foreground"
-            />
+          <div className="mt-4 space-y-4">
+            {/* Image Preview Section */}
+            {uploadedImage && (
+              <div className="relative">
+                <img 
+                  src={uploadedImage} 
+                  alt="Uploaded meal" 
+                  className="w-full h-48 object-cover rounded-lg border border-border"
+                />
+                <Button
+                  onClick={() => {
+                    setUploadedImage(null);
+                    setUploadedFile(null);
+                    setNewMealImageUrl('');
+                  }}
+                  className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white w-8 h-8 p-0"
+                >
+                  <X size={16} />
+                </Button>
+              </div>
+            )}
+            
+            {/* Camera & Upload Buttons - Di chuyển vào đây */}
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                onClick={startCamera}
+                className="bg-[#d92228] text-white h-12 rounded-xl"
+              >
+                <Camera className="mr-2" size={20} />
+                <span className="whitespace-nowrap">{t.scanMeal}</span>
+              </Button>
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                className="bg-white/10 text-foreground border border-border h-12 rounded-xl hover:bg-muted"
+              >
+                <Upload className="mr-2" size={20} />
+                <span className="whitespace-nowrap">{t.uploadPhoto}</span>
+              </Button>
+            </div>
+            
+            {/* Form Fields */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input
+                value={newMealName}
+                onChange={(e) => setNewMealName(e.target.value)}
+                placeholder={language === 'en' ? 'Meal name' : 'Tên bữa ăn'}
+                className="bg-input-background border-border text-foreground placeholder:text-foreground"
+              />
+              <Select value={newMealType} onValueChange={(v: 'breakfast' | 'lunch' | 'dinner' | 'snack') => setNewMealType(v)}>
+                <SelectTrigger className="bg-input-background border-border text-foreground">
+                  <SelectValue placeholder={language === 'en' ? 'Meal type' : 'Loại bữa'} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="breakfast">{language === 'en' ? 'Breakfast' : 'Sáng'}</SelectItem>
+                  <SelectItem value="lunch">{language === 'en' ? 'Lunch' : 'Trưa'}</SelectItem>
+                  <SelectItem value="dinner">{language === 'en' ? 'Dinner' : 'Tối'}</SelectItem>
+                  <SelectItem value="snack">{language === 'en' ? 'Snack' : 'Ăn vặt'}</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                value={newMealCalories}
+                onChange={(e) => setNewMealCalories(e.target.value)}
+                placeholder={language === 'en' ? 'Calories' : 'Calories'}
+                type="number"
+                className="bg-input-background border-border text-foreground placeholder:text-foreground"
+              />
+              <Input
+                value={newMealProtein}
+                onChange={(e) => setNewMealProtein(e.target.value)}
+                placeholder={language === 'en' ? 'Protein (g)' : 'Protein (g)'}
+                type="number"
+                className="bg-input-background border-border text-foreground placeholder:text-foreground"
+              />
+              <Input
+                value={newMealCarbs}
+                onChange={(e) => setNewMealCarbs(e.target.value)}
+                placeholder={language === 'en' ? 'Carbs (g)' : 'Carbs (g)'}
+                type="number"
+                className="bg-input-background border-border text-foreground placeholder:text-foreground"
+              />
+              <Input
+                value={newMealFats}
+                onChange={(e) => setNewMealFats(e.target.value)}
+                placeholder={language === 'en' ? 'Fats (g)' : 'Fats (g)'}
+                type="number"
+                className="bg-input-background border-border text-foreground placeholder:text-foreground"
+              />
+              {!uploadedImage && (
+                <Input
+                  value={newMealImageUrl}
+                  onChange={(e) => setNewMealImageUrl(e.target.value)}
+                  placeholder={language === 'en' ? 'Image URL (optional)' : 'Link ảnh (tùy chọn)'}
+                  className="bg-input-background border-border text-foreground placeholder:text-foreground col-span-full"
+                />
+              )}
+            </div>
+            
+            {/* Action Buttons */}
             <div className="flex gap-2">
               <Button onClick={addCustomMeal} className="bg-[#d92228] text-white">
                 {language === 'en' ? 'Add' : 'Thêm'}
               </Button>
-              <Button onClick={() => setShowAddForm(false)} variant="secondary" className="bg-input-background text-foreground">
+              <Button onClick={resetForm} variant="secondary" className="bg-input-background text-foreground">
                 {language === 'en' ? 'Cancel' : 'Hủy'}
               </Button>
             </div>
           </div>
         )}
-      </Card>
-      {/* Search Bar */}
-      <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-gray-300 relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none z-0">
-          <div className="absolute top-2 left-10 text-white/20 text-xs animate-fall" style={{ animationDelay: '0s', animationDuration: '3s' }}>❄</div>
-          <div className="absolute top-0 right-14 text-white/20 text-xs animate-fall" style={{ animationDelay: '0.6s', animationDuration: '4s' }}>❄</div>
-        </div>
-        <div className="relative z-10">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={20} />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t.searchMeals}
-            className="pl-10 bg-card border-border text-foreground placeholder:text-muted-foreground"
-          />
-        </div>
-      </div>
-
-      {/* Camera & Upload Buttons */}
-      <div className="grid grid-cols-2 gap-3">
-        <Button
-          onClick={startCamera}
-          className="bg-[#d92228] text-white h-12 rounded-xl"
-        >
-          <Camera className="mr-2" size={20} />
-          <span className="whitespace-nowrap">{t.scanMeal}</span>
-        </Button>
-        <Button
-          onClick={() => fileInputRef.current?.click()}
-          className="bg-white/10 text-foreground border border-border h-12 rounded-xl hover:bg-muted"
-        >
-          <Upload className="mr-2" size={20} />
-          <span className="whitespace-nowrap">{t.uploadPhoto}</span>
-        </Button>
+        
+        {/* Hidden file input */}
         <input
           ref={fileInputRef}
           type="file"
@@ -249,7 +307,7 @@ export function MealTrackingTab({ language, t }: MealTrackingTabProps) {
           onChange={handleFileUpload}
           className="hidden"
         />
-      </div>
+      </Card>
 
       {/* Camera View */}
       {showCamera && (
@@ -283,6 +341,23 @@ export function MealTrackingTab({ language, t }: MealTrackingTabProps) {
           </div>
         </Card>
       )}
+
+      {/* Search Bar */}
+      <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-gray-300 relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none z-0">
+          <div className="absolute top-2 left-10 text-white/20 text-xs animate-fall" style={{ animationDelay: '0s', animationDuration: '3s' }}>❄</div>
+          <div className="absolute top-0 right-14 text-white/20 text-xs animate-fall" style={{ animationDelay: '0.6s', animationDuration: '4s' }}>❄</div>
+        </div>
+        <div className="relative z-10">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={20} />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t.searchMeals}
+            className="pl-10 bg-card border-border text-foreground placeholder:text-muted-foreground"
+          />
+        </div>
+      </div>
 
       {/* Search Results */}
       {searchQuery && (
