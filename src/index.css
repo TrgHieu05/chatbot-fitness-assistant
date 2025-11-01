@@ -1,0 +1,9 @@
+/* Tailwind v4 entry CSS */
+@import "tailwindcss";
+@import "./styles/globals.css";
+
+/* Scan sources for class usage */
+@source "./index.html";
+@source "./src/**/*.{ts,tsx}";
+
+/* Add any additional CSS below, if needed */
