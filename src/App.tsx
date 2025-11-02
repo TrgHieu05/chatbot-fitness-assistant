@@ -11,6 +11,7 @@ import { Button } from './components/ui/button';
 import { User, Calendar, UtensilsCrossed, Store, Users, LogOut } from 'lucide-react';
 import { translations, Language } from './lib/translations';
 import christmasBanner from './assets/img4.png';
+import { ChatBubble } from './components/ChatBubble';
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -82,6 +83,9 @@ export default function App() {
           <CommunityTab language={language} t={t} username={username} />
         )}
       </div>
+
+      {/* Global Chat Bubble visible across all tabs */}
+      <ChatBubble language={language} t={t} />
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 z-50">

@@ -1,42 +1,39 @@
 import { useRef, useState } from 'react';
 import { Card } from './ui/card';
-import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { ScrollArea } from './ui/scroll-area';
-import { Send, Camera } from 'lucide-react';
-import { Language } from '../lib/translations';
-import { weeklyMealPlan, mealsDatabase } from '../lib/mockData';
-import { chatWithNutritionAI, chatWithNutritionAIVision, getModeInstruction } from '../lib/aiClient';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Send, Camera, X } from 'lucide-react';
+import { Language } from '../lib/translations';
+import { chatWithNutritionAI, chatWithNutritionAIVision, getModeInstruction } from '../lib/aiClient';
 
-interface CalendarTabProps {
-  language: Language;
-  t: any;
-}
-
-// Kiểu cho tin nhắn chat để tránh 'implicit any'
 type ChatMessage = {
   type: 'ai' | 'user';
   message: string;
 };
 
-export function CalendarTab({ language, t }: CalendarTabProps) {
-  const [selectedDay, setSelectedDay] = useState(0);
+interface ChatBubbleProps {
+  language: Language;
+  t: any;
+}
+
+export function ChatBubble({ language, t }: ChatBubbleProps) {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
       type: 'ai',
-      message: language == 'en' 
-        ? 'Hello! I can help you with meal suggestions and nutrition questions. What would you like to know?' 
-        : 'Xin chào! Tôi có thể giúp bạn về gợi ý bữa ăn và câu hỏi dinh dưỡng. Bạn muốn biết gì?'
-    }
+      message:
+        language === 'en'
+          ? 'Hello! I can help you with meal suggestions and nutrition questions. What would you like to know?'
+          : 'Xin chào! Tôi có thể giúp bạn về gợi ý bữa ăn và câu hỏi dinh dưỡng. Bạn muốn biết gì?',
+    },
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [mode, setMode] = useState<'advice' | 'menu' | 'calories'>('advice');
   const [usageCount, setUsageCount] = useState<number>(() => {
     try {
-      const raw = typeof window !== 'undefined' ? localStorage.getItem('calendar_ai_usage') : null;
+      const raw = typeof window !== 'undefined' ? localStorage.getItem('global_ai_usage') : null;
       return raw ? parseInt(raw) || 0 : 0;
     } catch {
       return 0;
@@ -44,36 +41,42 @@ export function CalendarTab({ language, t }: CalendarTabProps) {
   });
   const [summaryText, setSummaryText] = useState<string>(() => {
     try {
-      const raw = typeof window !== 'undefined' ? localStorage.getItem('calendar_ai_summary') : null;
+      const raw = typeof window !== 'undefined' ? localStorage.getItem('global_ai_summary') : null;
       return raw || '';
     } catch {
       return '';
     }
   });
 
-  // Bong bóng chat đã chuyển thành component global (ChatBubble)
+  const [showChatBubble, setShowChatBubble] = useState(false);
 
-  // Helper lưu/persist số lượt và tóm tắt
+  // Camera states & refs cho chế độ phân tích calories
+  const [showCamera, setShowCamera] = useState(false);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
   const persistUsage = (next: number) => {
     setUsageCount(next);
-    try { if (typeof window !== 'undefined') localStorage.setItem('calendar_ai_usage', String(next)); } catch {}
+    try {
+      if (typeof window !== 'undefined') localStorage.setItem('global_ai_usage', String(next));
+    } catch {}
   };
   const persistSummary = (text: string) => {
     setSummaryText(text);
-    try { if (typeof window !== 'undefined') localStorage.setItem('calendar_ai_summary', text); } catch {}
+    try {
+      if (typeof window !== 'undefined') localStorage.setItem('global_ai_summary', text);
+    } catch {}
   };
 
-  // Định dạng văn bản để dễ đọc: chèn xuống dòng theo từ khóa/ngày và chia câu
   const formatPlainTextForChat = (text: string): string => {
     let s = (text || '').trim();
-    // Chèn xuống dòng trước các mục ngày và bữa ăn (EN/VI)
     s = s
       .replace(/\s*(Day\s*\d+:)/g, '\n$1\n')
       .replace(/\s*(Breakfast:|Lunch:|Dinner:|Snack:)/g, '\n$1 ')
       .replace(/\s*(Ngày\s*\d+:)/g, '\n$1\n')
       .replace(/\s*(Sáng:|Trưa:|Tối:|Ăn vặt:)/g, '\n$1 ');
 
-    // Nếu hầu như không có xuống dòng, tách theo câu và chèn \n sau mỗi 2 câu
     if (!/\n/.test(s)) {
       const parts = s.split(/(?<=\.|\?|!)[\s]+/);
       const rebuilt: string[] = [];
@@ -85,24 +88,18 @@ export function CalendarTab({ language, t }: CalendarTabProps) {
       s = rebuilt.join('').replace(/[ ]{2,}/g, ' ').trim();
     }
 
-    // Giới hạn khoảng trắng thừa
     s = s.replace(/[ \t]{2,}/g, ' ').replace(/\n{3,}/g, '\n\n');
     return s;
   };
 
-  // Camera states & refs cho chế độ phân tích calories
-  const [showCamera, setShowCamera] = useState(false);
-  const [stream, setStream] = useState<MediaStream | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
   const startCamera = async () => {
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' }
+        video: { facingMode: 'environment' },
       });
       setStream(mediaStream);
       if (videoRef.current) {
+        // @ts-ignore
         videoRef.current.srcObject = mediaStream;
       }
       setShowCamera(true);
@@ -131,8 +128,6 @@ export function CalendarTab({ language, t }: CalendarTabProps) {
     ctx.drawImage(video, 0, 0);
     const dataUrl = canvas.toDataURL('image/png');
     stopCamera();
-
-    // Gửi ảnh đến AI cho chế độ phân tích calories
     await sendCalorieAnalysisWithImage(dataUrl);
   };
 
@@ -145,7 +140,6 @@ export function CalendarTab({ language, t }: CalendarTabProps) {
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isSending) return;
 
-    // Giới hạn 20 lần cho mỗi phiên
     if (usageCount >= 20) {
       const limitMsg = language === 'en'
         ? 'You have reached the limit of 20 uses in this session.'
@@ -164,17 +158,15 @@ export function CalendarTab({ language, t }: CalendarTabProps) {
         role: m.type === 'ai' ? 'assistant' : 'user',
         content: m.message,
       }));
-      // Nếu có tóm tắt, ghép vào đầu như system message phụ
       const summaryMessage = summaryText
         ? [{ role: 'system', content: language === 'en' ? `Conversation summary: ${summaryText}` : `Tóm tắt hội thoại: ${summaryText}` }]
         : [];
 
-      // Khi lịch sử dài, tạo tóm tắt (đếm lượt vào giới hạn 20)
       if (history.length >= 8 && usageCount < 20) {
         const newSummary = await chatWithNutritionAI(
           [
             { role: 'system', content: language === 'en' ? 'Summarize the following conversation in one short paragraph.' : 'Tóm tắt cuộc hội thoại sau thành một đoạn ngắn.' },
-            ...history as { role: 'user' | 'assistant' | 'system'; content: string }[]
+            ...history as any,
           ],
           language === 'en' ? 'en' : 'vi'
         );
@@ -184,7 +176,6 @@ export function CalendarTab({ language, t }: CalendarTabProps) {
 
       const messages = [
         ...summaryMessage as any,
-        // Thêm hướng dẫn theo chế độ để định hình câu trả lời
         { role: 'system', content: getModeInstruction(mode, language === 'en' ? 'en' : 'vi') },
         ...history,
         { role: 'user', content: userText },
@@ -207,7 +198,6 @@ export function CalendarTab({ language, t }: CalendarTabProps) {
 
   const sendCalorieAnalysisWithImage = async (imageDataUrl: string) => {
     if (isSending) return;
-    // Giới hạn 20
     if (usageCount >= 20) {
       const limitMsg = language === 'en'
         ? 'You have reached the limit of 20 uses in this session.'
@@ -245,11 +235,10 @@ export function CalendarTab({ language, t }: CalendarTabProps) {
         'calories'
       );
       const formatted = formatPlainTextForChat(aiReply);
-      // Gửi tin nhắn xác nhận đã gửi ảnh
       setChatMessages((prev: ChatMessage[]) => [
         ...prev,
         { type: 'user', message: language === 'en' ? 'Sent a meal photo for analysis.' : 'Đã gửi ảnh bữa ăn để phân tích.' },
-        { type: 'ai', message: formatted }
+        { type: 'ai', message: formatted },
       ]);
       persistUsage(Math.min(usageCount + 1, 20));
     } catch (err: any) {
@@ -263,114 +252,109 @@ export function CalendarTab({ language, t }: CalendarTabProps) {
     }
   };
 
-  const getMealData = (mealId: number) => {
-    return mealsDatabase.find(m => m.id === mealId);
-  };
-
-  const dayData = weeklyMealPlan[selectedDay];
-  const totalDayCalories = dayData.meals.reduce((sum, meal) => sum + meal.calories, 0);
-  const totalDayProtein = dayData.meals.reduce((sum, meal) => sum + meal.protein, 0);
-  const totalDayCarbs = dayData.meals.reduce((sum, meal) => sum + meal.carbs, 0);
-  const totalDayFats = dayData.meals.reduce((sum, meal) => sum + meal.fats, 0);
-
   return (
-    <div className="space-y-4 pb-24">
-      {/* Week Calendar */}
-      <div className="bg-card backdrop-blur-md rounded-2xl p-4 border border-border relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none z-0">
-          <div className="absolute top-2 left-10 text-muted-foreground text-xs animate-fall" style={{ animationDelay: '0s', animationDuration: '3s' }}>❄</div>
-          <div className="absolute top-0 right-16 text-muted-foreground text-xs animate-fall" style={{ animationDelay: '0.5s', animationDuration: '4s' }}>❄</div>
-          <div className="absolute top-4 left-1/3 text-muted-foreground text-xs animate-fall" style={{ animationDelay: '1s', animationDuration: '3.5s' }}>❄</div>
-        </div>
-        <h3 className="text-foreground mb-4 relative z-10">{t.weeklyCalendar}</h3>
-        <div className="flex gap-2 overflow-x-auto pb-2 relative z-10">
-          {weeklyMealPlan.map((day, index) => (
-            <button
-              key={index}
-              onClick={() => setSelectedDay(index)}
-              className={`flex-shrink-0 px-4 py-3 rounded-xl transition-all ${
-                selectedDay === index
-                  ? 'bg-[#d92228] text-white'
-                  : 'bg-card text-foreground'
-              }`}
-            >
-              <div className="text-xs">{day.day[language]}</div>
-              <div className="text-sm mt-1">{day.date}</div>
-            </button>
-          ))}
-        </div>
-      </div>
+    <>
+      <Button
+        onClick={() => setShowChatBubble((v) => !v)}
+        className="fixed bottom-24 right-4 z-[1000] rounded-full p-0 h-16 w-16 bg-[#ffffff] text-[#d92228] shadow-lg hover:bg-[#ffd6d6] overflow-hidden"
+        aria-label={language === 'en' ? 'Open AI Nutrition Assistant' : 'Mở trợ lý dinh dưỡng AI'}
+      >
+        <img
+          src="/src/assets/mascot.svg"
+          className="h-20 w-20 object-cover"
+        />
+      </Button>
 
-      {/* Daily Summary */}
-      <Card className="bg-card backdrop-blur-md border-border p-4 relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none z-0">
-          <div className="absolute top-1 left-8 text-muted-foreground text-xs animate-fall" style={{ animationDelay: '0.2s', animationDuration: '3.2s' }}>❄</div>
-          <div className="absolute top-2 right-10 text-muted-foreground text-xs animate-fall" style={{ animationDelay: '0.7s', animationDuration: '4.2s' }}>❄</div>
-        </div>
-        <div className="grid grid-cols-4 gap-2 relative z-10">
-          <div className="text-center">
-            <p className="text-foreground text-xs">{t.calories}</p>
-            <p className="text-foreground">{totalDayCalories}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-foreground text-xs">{t.protein}</p>
-            <p className="text-foreground">{totalDayProtein}g</p>
-          </div>
-          <div className="text-center">
-            <p className="text-foreground text-xs">{t.carbs}</p>
-            <p className="text-foreground">{totalDayCarbs}g</p>
-          </div>
-          <div className="text-center">
-            <p className="text-foreground text-xs">{t.fats}</p>
-            <p className="text-foreground">{totalDayFats}g</p>
-          </div>
-        </div>
-      </Card>
+      {showChatBubble && (
+        <div className="fixed bottom-24 right-4 z-[1000] w-[22rem] max-w-[92vw]">
+          <Card className="bg-card backdrop-blur-md border-border overflow-hidden relative shadow-xl">
+            <div className="absolute inset-0 pointer-events-none z-0">
+              <div className="absolute top-3 left-12 text-muted-foreground text-xs animate-fall" style={{ animationDelay: '0.4s', animationDuration: '3.6s' }}>❄</div>
+              <div className="absolute top-1 right-14 text-muted-foreground text-xs animate-fall" style={{ animationDelay: '1s', animationDuration: '4.4s' }}>❄</div>
+            </div>
+            <div className="bg-[#d92228] p-3 relative z-10 flex items-center justify-between">
+              <h3 className="text-primary-foreground text-sm">{t.aiNutritionAssistant}</h3>
+              <div className="flex items-center gap-3">
+                <span className="text-primary-foreground text-[11px]">
+                  {language === 'en' ? 'Uses left: ' : 'Lượt còn lại: '} {Math.max(0, 20 - usageCount)}
+                </span>
+                <Button
+                  onClick={() => setShowChatBubble(false)}
+                  className="h-7 w-7 p-0 rounded-full bg-white/20 text-white hover:bg-white/30"
+                >
+                  <X size={16} />
+                </Button>
+              </div>
+            </div>
 
-      {/* Meals for Selected Day */}
-      <div className="space-y-3">
-        {dayData.meals.map((meal, index) => {
-          const mealData = getMealData(meal.mealId);
-          if (!mealData) return null;
+            <div className="p-3 border-b border-gray-300 relative z-10 flex items-center gap-2">
+              <Select value={mode} onValueChange={(v: 'advice' | 'menu' | 'calories') => setMode(v)}>
+                <SelectTrigger className="w-full bg-input-background border-border text-foreground">
+                  <SelectValue placeholder={language === 'en' ? 'Select mode' : 'Chọn chế độ'} />
+                </SelectTrigger>
+                <SelectContent className="z-[1100]">
+                  <SelectItem value="advice">{modeLabel.advice}</SelectItem>
+                  <SelectItem value="menu">{modeLabel.menu}</SelectItem>
+                  <SelectItem value="calories">{modeLabel.calories}</SelectItem>
+                </SelectContent>
+              </Select>
+              {mode === 'calories' && (
+                <Button onClick={startCamera} className="bg-[#d92228] hover:opacity-90">
+                  <Camera size={18} />
+                </Button>
+              )}
+            </div>
 
-          const mealTypes = {
-            breakfast: t.breakfast,
-            lunch: t.lunch,
-            dinner: t.dinner,
-            snack: t.snack,
-          };
-
-          return (
-            <Card key={index} className="bg-card backdrop-blur-md border-border overflow-hidden">
-              <div className="flex gap-4 p-4">
-                <img
-                  src={mealData.image}
-                  alt={mealData.name[language]}
-                  className="w-20 h-20 rounded-xl object-cover"
-                />
-                <div className="flex-1">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <Badge className="bg-gradient-to-r from-[#d92228] to-[#b91c21] text-white mb-1">
-                        {mealTypes[meal.type as keyof typeof mealTypes]}
-                      </Badge>
-                      <h4 className="text-foreground text-sm">{mealData.name[language]}</h4>
+            <ScrollArea className="h-64 p-3 relative z-10">
+              <div className="space-y-3">
+                {chatMessages.map((msg, index) => (
+                  <div key={index} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div
+                      className={`max-w-[80%] p-3 rounded-2xl ${
+                        msg.type === 'user' ? 'bg-[#d92228] text-white' : 'bg-input-background text-foreground'
+                      }`}
+                    >
+                      <p className="text-xs leading-relaxed whitespace-pre-line break-words">{msg.message}</p>
                     </div>
                   </div>
-                  <div className="flex gap-3 text-xs text-foreground">
-                    <span>{meal.calories} {t.calories.toLowerCase()}</span>
-                    <span>{meal.protein}g {t.protein.toLowerCase()}</span>
-                    <span>{meal.carbs}g {t.carbs.toLowerCase()}</span>
+                ))}
+              </div>
+            </ScrollArea>
+
+            {showCamera && (
+              <Card className="bg-card border-border m-3">
+                <div className="p-3 space-y-2">
+                  <video ref={videoRef} autoPlay className="w-full rounded-lg" />
+                  <canvas ref={canvasRef} className="hidden" />
+                  <div className="flex gap-2">
+                    <Button onClick={capturePhotoAndAnalyze} className="bg-[#d92228] text-white">
+                      {language === 'en' ? 'Capture' : 'Chụp ảnh'}
+                    </Button>
+                    <Button onClick={stopCamera} variant="secondary" className="bg-input-background text-foreground">
+                      {language === 'en' ? 'Cancel' : 'Hủy'}
+                    </Button>
                   </div>
                 </div>
+              </Card>
+            )}
+
+            <div className="p-3 border-t border-gray-300 relative z-10">
+              <div className="flex gap-2">
+                <Input
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                  placeholder={t.askMeAnything}
+                  className="bg-input-background border-border text-foreground placeholder:text-foreground"
+                />
+                <Button onClick={handleSendMessage} disabled={isSending} className="bg-[#d92228] hover:opacity-90">
+                  <Send size={20} />
+                </Button>
               </div>
-            </Card>
-          );
-        })}
-      </div>
-
-
-      {/* Bong bóng chat đã được chuyển thành component global trong App.tsx */}
-    </div>
+            </div>
+          </Card>
+        </div>
+      )}
+    </>
   );
 }
