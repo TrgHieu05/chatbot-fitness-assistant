@@ -68,14 +68,7 @@ export function MealTrackingTab({ language, t }: MealTrackingTabProps) {
       };
       reader.readAsDataURL(file);
       
-      // Simulate meal detection từ ảnh (trong thực tế sẽ gọi AI API)
-      const randomMeal = mealsDatabase[Math.floor(Math.random() * mealsDatabase.length)];
-      setNewMealName(randomMeal.name[language]);
-      setNewMealCalories(randomMeal.calories.toString());
-      setNewMealProtein(randomMeal.protein.toString());
-      setNewMealCarbs(randomMeal.carbs.toString());
-      setNewMealFats(randomMeal.fats.toString());
-      setNewMealType('snack');
+      // Không auto-fill dữ liệu từ mock; giữ nguyên các trường người dùng nhập
     }
   };
 
@@ -112,14 +105,7 @@ export function MealTrackingTab({ language, t }: MealTrackingTabProps) {
             setUploadedImage(imageUrl);
             setNewMealImageUrl(imageUrl);
             
-            // Simulate meal detection từ ảnh camera
-            const randomMeal = mealsDatabase[Math.floor(Math.random() * mealsDatabase.length)];
-            setNewMealName(randomMeal.name[language]);
-            setNewMealCalories(randomMeal.calories.toString());
-            setNewMealProtein(randomMeal.protein.toString());
-            setNewMealCarbs(randomMeal.carbs.toString());
-            setNewMealFats(randomMeal.fats.toString());
-            setNewMealType('snack');
+            // Không auto-fill dữ liệu từ mock khi chụp ảnh
           }
         }, 'image/jpeg', 0.8);
         
@@ -395,7 +381,7 @@ export function MealTrackingTab({ language, t }: MealTrackingTabProps) {
 
       {/* Added Meals */}
       {addedMeals.length > 0 && (
-        <Card className="bg-white/5 backdrop-blur-md border-gray-300 p-4 relative overflow-hidden">
+        <Card className="bg-[#ffffff] backdrop-blur-md border-[#dfdfdf] p-4 relative overflow-hidden">
           <div className="absolute inset-0 pointer-events-none z-0">
             <div className="absolute top-2 left-12 text-white/20 text-xs animate-fall" style={{ animationDelay: '0.4s', animationDuration: '3.8s' }}>❄</div>
             <div className="absolute top-1 right-16 text-white/20 text-xs animate-fall" style={{ animationDelay: '0.9s', animationDuration: '4.5s' }}>❄</div>
@@ -403,15 +389,15 @@ export function MealTrackingTab({ language, t }: MealTrackingTabProps) {
           <h3 className="text-foreground mb-3 relative z-10">{language === 'en' ? 'Today\'s Meals' : 'Bữa Ăn Hôm Nay'}</h3>
           <div className="space-y-2 mb-4 relative z-10">
             {addedMeals.map((meal, index) => (
-              <div key={index} className="flex items-center gap-3 bg-black/30 rounded-lg p-2">
+              <div key={index} className="flex items-center gap-3 bg-[#f5f5f5] rounded-lg p-2">
                 <img
                   src={meal.image}
                   alt={meal.name[language]}
                   className="w-12 h-12 rounded-lg object-cover"
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="text-white text-sm truncate">{meal.name[language]}</p>
-                  <p className="text-white/70 text-xs">{meal.calories} cal</p>
+                  <p className="text-black text-sm truncate">{meal.name[language]}</p>
+                  <p className="text-black/70 text-xs">{meal.calories} cal</p>
                 </div>
                 <Button
                   onClick={() => removeMeal(index)}
