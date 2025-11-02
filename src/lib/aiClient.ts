@@ -11,6 +11,7 @@ export async function chatWithNutritionAI(messages: ChatMessage[], language: 'en
         'ALWAYS respond in English, regardless of the user input language.',
         'Use plain text only — do not use Markdown, bullet points, code fences, or special formatting.',
         'Structure your response as short paragraphs separated by newline characters for readability.',
+        'Provide a short but informative response to the user query if you can.',
         'Provide clear, safe, practical diet guidance aligned to user goals, with concise tips and optional meal suggestions.',
       ].join(' ')
     : [
@@ -18,6 +19,7 @@ export async function chatWithNutritionAI(messages: ChatMessage[], language: 'en
         'LUÔN trả lời bằng tiếng Việt, bất kể người dùng nhập bằng ngôn ngữ nào.',
         'Chỉ dùng văn bản thuần — không dùng Markdown, gạch đầu dòng, code fence hoặc định dạng đặc biệt.',
         'Sắp xếp câu trả lời thành các đoạn ngắn, phân tách bằng ký tự xuống dòng để dễ đọc.',
+        'Nếu có thể, hãy đưa ra một câu trả lời ngắn gọn nhưng hữu ích cho người dùng.',
         'Hãy đưa ra hướng dẫn ăn uống an toàn, thực tế, phù hợp mục tiêu của người dùng, ưu tiên mẹo ngắn gọn và gợi ý bữa ăn.',
       ].join(' ');
 

@@ -10,7 +10,7 @@ import { SnowEffect } from './components/SnowEffect';
 import { Button } from './components/ui/button';
 import { User, Calendar, UtensilsCrossed, Store, Users, LogOut } from 'lucide-react';
 import { translations, Language } from './lib/translations';
-import christmasBanner from './assets/img4.png';
+import christmasBanner from './assets/banner.png';
 import { ChatBubble } from './components/ChatBubble';
 
 export default function App() {
@@ -50,7 +50,7 @@ export default function App() {
       <SnowEffect />
 
       {/* Top Banner with Christmas Image */}
-      <div className="sticky top-0 z-40 border-b border-border bg-card">
+      <div className="sticky top-0 z-40 border-b border-border bg-card overflow-visible">
         <div className="max-w-md mx-auto">
           <div className="relative">
             <img 

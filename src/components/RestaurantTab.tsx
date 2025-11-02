@@ -3,11 +3,11 @@ import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet';
-import { Star, MapPin, ShoppingCart, Plus, Minus } from 'lucide-react';
+import { Star, ShoppingCart, Plus, Minus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Language } from '../lib/translations';
 import { restaurants, mealsDatabase } from '../lib/mockData';
-import { DistrictMap } from './DistrictMap';
+// Map đã được yêu cầu xóa khỏi tab Restaurant
 
 interface RestaurantTabProps {
   language: Language;
@@ -27,6 +27,18 @@ export function RestaurantTab({ language, t }: RestaurantTabProps) {
   const [selectedRestaurant, setSelectedRestaurant] = useState<number | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
+
+  // Ảnh đại diện cho nhà hàng (dùng assets sẵn có)
+  const restaurantImages: Record<number, string> = {
+    1: new URL('../assets/restaurant1.jpg', import.meta.url).href,
+    2: new URL('../assets/restaurant2.jpg', import.meta.url).href,
+    3: new URL('../assets/restaurant3.jpg', import.meta.url).href,
+    4: new URL('../assets/restaurant4.jpg', import.meta.url).href,
+    5: new URL('../assets/restaurant5.jpg', import.meta.url).href,
+    6: new URL('../assets/restaurant6.jpg', import.meta.url).href,
+  };
+
+  const getRestaurantImage = (id: number) => restaurantImages[id] || new URL('../assets/banner.png', import.meta.url).href;
 
   const filteredRestaurants = selectedDistrict
     ? restaurants.filter(r => r.district === selectedDistrict)
@@ -96,26 +108,18 @@ export function RestaurantTab({ language, t }: RestaurantTabProps) {
         </button>
       </div>
 
-      {/* District Map */}
-      <Card className="bg-white/5 backdrop-blur-md border-gray-300 p-4 relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none z-0">
-          <div className="absolute top-3 left-12 text-white/20 text-xs animate-fall" style={{ animationDelay: '0.2s', animationDuration: '3.4s' }}>❄</div>
-          <div className="absolute top-1 right-16 text-white/20 text-xs animate-fall" style={{ animationDelay: '0.7s', animationDuration: '4.2s' }}>❄</div>
-        </div>
-        <h3 className="text-foreground mb-4 relative z-10">{t.selectDistrict}</h3>
-        <div className="relative z-10">
-          <DistrictMap
-            selectedDistrict={selectedDistrict}
-            onDistrictSelect={setSelectedDistrict}
-            language={language}
-          />
-        </div>
-      </Card>
+      {/* Khu vực bản đồ đã được gỡ theo yêu cầu */}
 
       {/* Restaurants List */}
       <div className="space-y-3">
         {filteredRestaurants.map((restaurant) => (
           <Card key={restaurant.id} className="bg-white/5 backdrop-blur-md border-gray-300 overflow-hidden">
+            {/* Ảnh nhà hàng */}
+            <img
+              src={getRestaurantImage(restaurant.id)}
+              alt={restaurant.name[language]}
+              className="w-full h-32 object-cover"
+            />
             <div className="p-4">
               <div className="flex items-start justify-between mb-3">
                 <div>

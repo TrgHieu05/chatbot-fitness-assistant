@@ -62,30 +62,30 @@ export function ProfileTab({ username, language, t }: ProfileTabProps) {
           </div>
         
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-gradient-to-br from-blue-600/40 to-blue-800/40 rounded-xl p-4 border border-border">
-              <p className="text-black/70 text-sm">{t.weight}</p>
-              <p className="text-black text-xl">{metrics.weight.value} {metrics.weight.unit}</p>
-              <p className="text-[#d92228] text-xs mt-1">
+            <div className="bg-gradient-to-br from-[#d92228]/40 to-[#d92228]/80 rounded-xl p-4 border border-border">
+              <p className="text-white text-sm">{t.weight}</p>
+              <p className="text-white text-xl">{metrics.weight.value} {metrics.weight.unit}</p>
+              <p className="text-white text-xs mt-1">
                 {language === 'en' ? `Goal: ${metrics.weight.goal} kg` : `Mục tiêu: ${metrics.weight.goal} kg`}
               </p>
             </div>
           
           <div className="bg-gradient-to-br from-[#d92228]/40 to-[#d92228]/80 rounded-xl p-4 border border-border">
-            <p className="text-black/70 text-sm">{t.bmi}</p>
-            <p className="text-black text-xl">{metrics.bmi.value}</p>
-            <p className="text-[#d92228] text-xs mt-1">{metrics.bmi.status}</p>
+            <p className="text-white text-sm">{t.bmi}</p>
+            <p className="text-white text-xl">{metrics.bmi.value}</p>
+            <p className="text-white text-xs mt-1">{metrics.bmi.status}</p>
           </div>
           
-          <div className="bg-gradient-to-br from-purple-600/40 to-indigo-800/40 rounded-xl p-4 border border-border">
-            <p className="text-black/70 text-sm">{t.muscleMass}</p>
-            <p className="text-black text-xl">{metrics.muscleMass.value}{metrics.muscleMass.unit}</p>
-            <TrendingUp className="text-green-400 mt-1" size={16} />
+          <div className="bg-gradient-to-br from-[#d92228]/40 to-[#d92228]/80 rounded-xl p-4 border border-border">
+            <p className="text-white text-sm">{t.muscleMass}</p>
+            <p className="text-white text-xl">{metrics.muscleMass.value}{metrics.muscleMass.unit}</p>
+            <TrendingUp className="text-white mt-1" size={16} />
           </div>
           
-          <div className="bg-gradient-to-br from-orange-600/40 to-red-700/40 rounded-xl p-4 border border-border">
-            <p className="text-black/70 text-sm">{t.caloriesBurned}</p>
-            <p className="text-black text-xl">{metrics.caloriesBurned.value}</p>
-            <p className="text-black/50 text-xs mt-1">/{metrics.caloriesBurned.goal} {metrics.caloriesBurned.unit}</p>
+          <div className="bg-gradient-to-br from-[#d92228]/40 to-[#d92228]/80 rounded-xl p-4 border border-border">
+            <p className="text-white text-sm">{t.caloriesBurned}</p>
+            <p className="text-white text-xl">{metrics.caloriesBurned.value}</p>
+            <p className="text-white text-xs mt-1">/{metrics.caloriesBurned.goal} {metrics.caloriesBurned.unit}</p>
           </div>
         </div>
         </div>

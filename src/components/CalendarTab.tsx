@@ -290,8 +290,8 @@ export function CalendarTab({ language, t }: CalendarTabProps) {
               onClick={() => setSelectedDay(index)}
               className={`flex-shrink-0 px-4 py-3 rounded-xl transition-all ${
                 selectedDay === index
-                  ? 'bg-[#d92228] text-white'
-                  : 'bg-card text-foreground'
+                  ? 'bg-[#d92228] text-white font-bold'
+                  : 'bg-card text-foreground border border-border'
               }`}
             >
               <div className="text-xs">{day.day[language]}</div>

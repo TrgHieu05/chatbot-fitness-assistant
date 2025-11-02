@@ -258,7 +258,7 @@ export function ChatBubble({ language, t }: ChatBubbleProps) {
     <>
       <Button
         onClick={() => setShowChatBubble((v) => !v)}
-        className="fixed bottom-24 right-4 z-[1000] rounded-full p-0 h-16 w-16 bg-[#ffffff] text-[#d92228] shadow-lg hover:bg-[#ffd6d6] overflow-hidden"
+        className="fixed bottom-24 right-4 z-[1000] rounded-full p-0 h-16 w-16 bg-[#ffcece] text-[#d92228] shadow-lg hover:bg-[#ff8c8c] overflow-hidden"
         aria-label={language === 'en' ? 'Open AI Nutrition Assistant' : 'Mở trợ lý dinh dưỡng AI'}
       >
         <img

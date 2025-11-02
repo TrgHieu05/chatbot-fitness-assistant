@@ -20,6 +20,14 @@ export function CommunityTab({ language, t, username }: CommunityTabProps) {
   const [newPostImage, setNewPostImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Tạo chỉ số avatar ổn định dựa trên username (tránh đổi mỗi lần nhập/xóa ký tự)
+  const getAvatarIndexFromUsername = (name: string) => {
+    let sum = 0;
+    for (let i = 0; i < name.length; i++) sum += name.charCodeAt(i);
+    return (sum % 70) + 1; // i.pravatar hỗ trợ img=1..70
+  };
+  const userAvatarUrl = `https://i.pravatar.cc/150?img=${getAvatarIndexFromUsername(username)}`;
+
   const leaderboard = [
     { name: 'Alex Chen', points: 2450, rank: 1 },
     { name: 'Maria Santos', points: 2180, rank: 2 },
@@ -51,7 +59,7 @@ export function CommunityTab({ language, t, username }: CommunityTabProps) {
     const newPost = {
       id: posts.length + 1,
       username: username,
-      avatar: `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70)}`,
+      avatar: userAvatarUrl,
       time: 'Just now',
       content: {
         en: newPostText,
@@ -159,7 +167,7 @@ export function CommunityTab({ language, t, username }: CommunityTabProps) {
         </div>
         <div className="flex gap-3 mb-3 relative z-10">
           <img
-            src={`https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70)}`}
+            src={userAvatarUrl}
             alt={username}
             className="w-10 h-10 rounded-full"
           />
