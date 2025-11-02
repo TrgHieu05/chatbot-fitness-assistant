@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Send, Camera, X } from 'lucide-react';
 import { Language } from '../lib/translations';
 import { chatWithNutritionAI, chatWithNutritionAIVision, getModeInstruction } from '../lib/aiClient';
+// Lấy URL ảnh mascot từ thư mục assets, Vite sẽ xử lý hash khi build
+const mascotUrl = new URL('../assets/mascot.svg', import.meta.url).href;
 
 type ChatMessage = {
   type: 'ai' | 'user';
@@ -260,8 +262,9 @@ export function ChatBubble({ language, t }: ChatBubbleProps) {
         aria-label={language === 'en' ? 'Open AI Nutrition Assistant' : 'Mở trợ lý dinh dưỡng AI'}
       >
         <img
-          src="/src/assets/mascot.svg"
-          className="h-20 w-20 object-cover"
+          src={mascotUrl}
+          alt={language === 'en' ? 'Mascot' : 'Mascot'}
+          className="w-full h-full object-contain"
         />
       </Button>
 
