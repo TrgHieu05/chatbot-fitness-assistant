@@ -12,18 +12,20 @@ import { User, Calendar, UtensilsCrossed, Store, Users, LogOut } from 'lucide-re
 import { translations, Language } from './lib/translations';
 import christmasBanner from './assets/banner.png';
 import { ChatBubble } from './components/ChatBubble';
-
+import { DietQuestionnaire } from './components/DietQuestionnaire';
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState('');
   const [language, setLanguage] = useState<Language>('en');
   const [activeTab, setActiveTab] = useState<'profile' | 'calendar' | 'meal' | 'restaurant' | 'community'>('profile');
+  const [showQuestionnaire, setShowQuestionnaire] = useState(false);
 
   const t = translations[language];
 
   const handleLogin = (name: string) => {
     setUsername(name);
     setIsLoggedIn(true);
+    setShowQuestionnaire(true);
   };
 
   const handleLogout = () => {
@@ -34,6 +36,17 @@ export default function App() {
 
   if (!isLoggedIn) {
     return <LoginPage onLogin={handleLogin} />;
+  }
+
+  if (showQuestionnaire) {
+    return (
+      <DietQuestionnaire
+        language={language}
+        onComplete={() => {
+          setShowQuestionnaire(false);
+        }}
+      />
+    );
   }
 
   const tabs = [
