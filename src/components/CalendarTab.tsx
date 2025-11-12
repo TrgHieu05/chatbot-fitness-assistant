@@ -7,6 +7,7 @@ import { ScrollArea } from './ui/scroll-area';
 import { Send, Camera } from 'lucide-react';
 import { Language } from '../lib/translations';
 import { weeklyMealPlan, mealsDatabase } from '../lib/mockData';
+import cheatdayBanner from '../assets/cheatday_banner.png';
 import { chatWithNutritionAI, chatWithNutritionAIVision, getModeInstruction } from '../lib/aiClient';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
@@ -23,6 +24,17 @@ type ChatMessage = {
 
 export function CalendarTab({ language, t }: CalendarTabProps) {
   const [selectedDay, setSelectedDay] = useState(0);
+  // Danh sách các ngày được bật Cheat Day (mỗi ngày độc lập)
+  const [cheatDays, setCheatDays] = useState<number[]>([]);
+
+  // Toggle trạng thái Cheat Day cho một ngày bất kỳ
+  const toggleCheatDay = (dayIndex: number) => {
+    setCheatDays((prev) =>
+      prev.includes(dayIndex)
+        ? prev.filter((i) => i !== dayIndex)
+        : [...prev, dayIndex]
+    );
+  };
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
       type: 'ai',
@@ -283,23 +295,47 @@ export function CalendarTab({ language, t }: CalendarTabProps) {
           <div className="absolute top-4 left-1/3 text-muted-foreground text-xs animate-fall" style={{ animationDelay: '1s', animationDuration: '3.5s' }}>❄</div>
         </div>
         <h3 className="text-foreground mb-4 relative z-10">{t.weeklyCalendar}</h3>
-        <div className="flex gap-2 overflow-x-auto pb-2 relative z-10">
+        {/* Một hàng: mỗi item bọc ô ngày + pill Cheat Day tương ứng */}
+        <div className="flex gap-2 overflow-x-auto pb-1 relative z-10">
           {weeklyMealPlan.map((day, index) => (
-            <button
-              key={index}
-              onClick={() => setSelectedDay(index)}
-              className={`flex-shrink-0 px-4 py-3 rounded-xl transition-all ${
-                selectedDay === index
-                  ? 'bg-[#d92228] text-white font-bold'
-                  : 'bg-card text-foreground border border-border'
-              }`}
-            >
-              <div className="text-xs">{day.day[language]}</div>
-              <div className="text-sm mt-1">{day.date}</div>
-            </button>
+            <div key={index} className="flex-shrink-0 w-28 flex flex-col items-stretch">
+              <button
+                onClick={() => setSelectedDay(index)}
+                className={`w-full px-4 py-3 rounded-xl transition-all ${
+                  selectedDay === index
+                    ? 'bg-[#d92228] text-white font-bold'
+                    : 'bg-card text-foreground border border-border'
+                }`}
+              >
+                <div className="text-xs">{day.day[language]}</div>
+                <div className="text-sm mt-1">{day.date}</div>
+              </button>
+
+              <button
+                onClick={() => toggleCheatDay(index)}
+                className={`mt-2 w-full px-4 py-1 rounded-full text-xs transition-all ${
+                  cheatDays.includes(index)
+                    ? 'bg-yellow-400 text-black'
+                    : 'bg-card text-foreground border border-border'
+                }`}
+              >
+                {language === 'en' ? 'Cheat Day' : 'Cheat Day'}
+              </button>
+            </div>
           ))}
         </div>
       </div>
+
+      {/* Banner Cheat Day hiển thị ngay dưới Weekly Meal Plan khi ngày hiện tại bật */}
+      {cheatDays.includes(selectedDay) && (
+        <div className="rounded-2xl overflow-hidden border border-border">
+          <img
+            src={cheatdayBanner}
+            alt={language === 'en' ? 'Cheat Day' : 'Cheat Day'}
+            className="w-full object-cover"
+          />
+        </div>
+      )}
 
       {/* Daily Summary */}
       <Card className="bg-card backdrop-blur-md border-border p-4 relative overflow-hidden">
