@@ -45,6 +45,7 @@ export default function App() {
         onComplete={() => {
           setShowQuestionnaire(false);
         }}
+        onChangeLanguage={setLanguage}
       />
     );
   }

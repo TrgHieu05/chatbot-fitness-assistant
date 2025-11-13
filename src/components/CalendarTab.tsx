@@ -10,6 +10,15 @@ import { weeklyMealPlan, mealsDatabase } from '../lib/mockData';
 import cheatdayBanner from '../assets/cheatday_banner.png';
 import { chatWithNutritionAI, chatWithNutritionAIVision, getModeInstruction } from '../lib/aiClient';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+} from './ui/alert-dialog';
 
 interface CalendarTabProps {
   language: Language;
@@ -23,17 +32,25 @@ type ChatMessage = {
 };
 
 export function CalendarTab({ language, t }: CalendarTabProps) {
-  const [selectedDay, setSelectedDay] = useState(0);
+  // Index ngày hôm nay trong tuần (bắt đầu từ Thứ Hai = 0)
+  const todayIndex = ((new Date().getDay() + 6) % 7);
+  const [selectedDay, setSelectedDay] = useState<number>(() => todayIndex);
   // Danh sách các ngày được bật Cheat Day (mỗi ngày độc lập)
   const [cheatDays, setCheatDays] = useState<number[]>([]);
+  const [cheatLimitOpen, setCheatLimitOpen] = useState(false);
 
   // Toggle trạng thái Cheat Day cho một ngày bất kỳ
   const toggleCheatDay = (dayIndex: number) => {
-    setCheatDays((prev) =>
-      prev.includes(dayIndex)
-        ? prev.filter((i) => i !== dayIndex)
-        : [...prev, dayIndex]
-    );
+    setCheatDays((prev) => {
+      if (prev.includes(dayIndex)) {
+        return prev.filter((i) => i !== dayIndex);
+      }
+      if (prev.length >= 3) {
+        setCheatLimitOpen(true);
+        return prev;
+      }
+      return [...prev, dayIndex];
+    });
   };
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
@@ -279,7 +296,7 @@ export function CalendarTab({ language, t }: CalendarTabProps) {
     return mealsDatabase.find(m => m.id === mealId);
   };
 
-  const dayData = weeklyMealPlan[selectedDay];
+  const dayData = currentWeekPlan[selectedDay];
   const totalDayCalories = dayData.meals.reduce((sum, meal) => sum + meal.calories, 0);
   const totalDayProtein = dayData.meals.reduce((sum, meal) => sum + meal.protein, 0);
   const totalDayCarbs = dayData.meals.reduce((sum, meal) => sum + meal.carbs, 0);
@@ -287,6 +304,26 @@ export function CalendarTab({ language, t }: CalendarTabProps) {
 
   return (
     <div className="space-y-4 pb-24">
+      {/* Popup giới hạn Cheat Day */}
+      <AlertDialog open={cheatLimitOpen} onOpenChange={setCheatLimitOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {language === 'en' ? 'Cheat Day Limit' : 'Giới hạn Cheat Day'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {language === 'en'
+                ? 'You can only set up to 3 cheat days per week.'
+                : 'Bạn chỉ có thể đặt tối đa 3 ngày Cheat Day mỗi tuần.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction className="bg-[#c81b21] text-white font-bold" onClick={() => setCheatLimitOpen(false)}>
+              {language === 'en' ? 'OK' : 'Đã hiểu'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {/* Week Calendar */}
       <div className="bg-card backdrop-blur-md rounded-2xl p-4 border border-border relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none z-0">
@@ -297,7 +334,7 @@ export function CalendarTab({ language, t }: CalendarTabProps) {
         <h3 className="text-foreground mb-4 relative z-10">{t.weeklyCalendar}</h3>
         {/* Một hàng: mỗi item bọc ô ngày + pill Cheat Day tương ứng */}
         <div className="flex gap-2 overflow-x-auto pb-1 relative z-10">
-          {weeklyMealPlan.map((day, index) => (
+          {currentWeekPlan.map((day, index) => (
             <div key={index} className="flex-shrink-0 w-28 flex flex-col items-stretch">
               <button
                 onClick={() => setSelectedDay(index)}
@@ -337,76 +374,113 @@ export function CalendarTab({ language, t }: CalendarTabProps) {
         </div>
       )}
 
-      {/* Daily Summary */}
-      <Card className="bg-card backdrop-blur-md border-border p-4 relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none z-0">
-          <div className="absolute top-1 left-8 text-muted-foreground text-xs animate-fall" style={{ animationDelay: '0.2s', animationDuration: '3.2s' }}>❄</div>
-          <div className="absolute top-2 right-10 text-muted-foreground text-xs animate-fall" style={{ animationDelay: '0.7s', animationDuration: '4.2s' }}>❄</div>
-        </div>
-        <div className="grid grid-cols-4 gap-2 relative z-10">
-          <div className="text-center">
-            <p className="text-foreground text-xs">{t.calories}</p>
-            <p className="text-foreground">{totalDayCalories}</p>
+      {/* Daily Summary - ẩn khi ngày hiện tại là Cheat Day */}
+      {!cheatDays.includes(selectedDay) && (
+        <Card className="bg-card backdrop-blur-md border-border p-4 relative overflow-hidden">
+          <div className="absolute inset-0 pointer-events-none z-0">
+            <div className="absolute top-1 left-8 text-muted-foreground text-xs animate-fall" style={{ animationDelay: '0.2s', animationDuration: '3.2s' }}>❄</div>
+            <div className="absolute top-2 right-10 text-muted-foreground text-xs animate-fall" style={{ animationDelay: '0.7s', animationDuration: '4.2s' }}>❄</div>
           </div>
-          <div className="text-center">
-            <p className="text-foreground text-xs">{t.protein}</p>
-            <p className="text-foreground">{totalDayProtein}g</p>
+          <div className="grid grid-cols-4 gap-2 relative z-10">
+            <div className="text-center">
+              <p className="text-foreground text-xs">{t.calories}</p>
+              <p className="text-foreground">{totalDayCalories}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-foreground text-xs">{t.protein}</p>
+              <p className="text-foreground">{totalDayProtein}g</p>
+            </div>
+            <div className="text-center">
+              <p className="text-foreground text-xs">{t.carbs}</p>
+              <p className="text-foreground">{totalDayCarbs}g</p>
+            </div>
+            <div className="text-center">
+              <p className="text-foreground text-xs">{t.fats}</p>
+              <p className="text-foreground">{totalDayFats}g</p>
+            </div>
           </div>
-          <div className="text-center">
-            <p className="text-foreground text-xs">{t.carbs}</p>
-            <p className="text-foreground">{totalDayCarbs}g</p>
-          </div>
-          <div className="text-center">
-            <p className="text-foreground text-xs">{t.fats}</p>
-            <p className="text-foreground">{totalDayFats}g</p>
-          </div>
-        </div>
-      </Card>
+        </Card>
+      )}
 
-      {/* Meals for Selected Day */}
-      <div className="space-y-3">
-        {dayData.meals.map((meal, index) => {
-          const mealData = getMealData(meal.mealId);
-          if (!mealData) return null;
+      {/* Meals for Selected Day - ẩn khi Cheat Day */}
+      {!cheatDays.includes(selectedDay) && (
+        <div className="space-y-3">
+          {dayData.meals.map((meal, index) => {
+            const mealData = getMealData(meal.mealId);
+            if (!mealData) return null;
 
-          const mealTypes = {
-            breakfast: t.breakfast,
-            lunch: t.lunch,
-            dinner: t.dinner,
-            snack: t.snack,
-          };
+            const mealTypes = {
+              breakfast: t.breakfast,
+              lunch: t.lunch,
+              dinner: t.dinner,
+              snack: t.snack,
+            };
 
-          return (
-            <Card key={index} className="bg-card backdrop-blur-md border-border overflow-hidden">
-              <div className="flex gap-4 p-4">
-                <img
-                  src={mealData.image}
-                  alt={mealData.name[language]}
-                  className="w-20 h-20 rounded-xl object-cover"
-                />
-                <div className="flex-1">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <Badge className="bg-gradient-to-r from-[#d92228] to-[#b91c21] text-white mb-1">
-                        {mealTypes[meal.type as keyof typeof mealTypes]}
-                      </Badge>
-                      <h4 className="text-foreground text-sm">{mealData.name[language]}</h4>
+            return (
+              <Card key={index} className="bg-card backdrop-blur-md border-border overflow-hidden">
+                <div className="flex gap-4 p-4">
+                  <img
+                    src={mealData.image}
+                    alt={mealData.name[language]}
+                    className="w-20 h-20 rounded-xl object-cover"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <Badge className="bg-gradient-to-r from-[#d92228] to-[#b91c21] text-white mb-1">
+                          {mealTypes[meal.type as keyof typeof mealTypes]}
+                        </Badge>
+                        <h4 className="text-foreground text-sm">{mealData.name[language]}</h4>
+                      </div>
+                    </div>
+                    <div className="flex gap-3 text-xs text-foreground">
+                      <span>{meal.calories} {t.calories.toLowerCase()}</span>
+                      <span>{meal.protein}g {t.protein.toLowerCase()}</span>
+                      <span>{meal.carbs}g {t.carbs.toLowerCase()}</span>
                     </div>
                   </div>
-                  <div className="flex gap-3 text-xs text-foreground">
-                    <span>{meal.calories} {t.calories.toLowerCase()}</span>
-                    <span>{meal.protein}g {t.protein.toLowerCase()}</span>
-                    <span>{meal.carbs}g {t.carbs.toLowerCase()}</span>
-                  </div>
                 </div>
-              </div>
-            </Card>
-          );
-        })}
-      </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
 
       {/* Bong bóng chat đã được chuyển thành component global trong App.tsx */}
     </div>
   );
 }
+  // Tạo lịch tuần động dựa trên tuần hiện tại (Thứ Hai → Chủ Nhật)
+  const buildCurrentWeekPlan = () => {
+    const now = new Date();
+    const jsDay = now.getDay(); // 0=Sun..6=Sat
+    const offsetToMonday = (jsDay + 6) % 7; // số ngày lùi về thứ Hai
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - offsetToMonday);
+
+    const dayNames = [
+      { en: 'Monday', vi: 'Thứ Hai' },
+      { en: 'Tuesday', vi: 'Thứ Ba' },
+      { en: 'Wednesday', vi: 'Thứ Tư' },
+      { en: 'Thursday', vi: 'Thứ Năm' },
+      { en: 'Friday', vi: 'Thứ Sáu' },
+      { en: 'Saturday', vi: 'Thứ Bảy' },
+      { en: 'Sunday', vi: 'Chủ Nhật' },
+    ];
+
+    const plan = Array.from({ length: 7 }).map((_, i) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const monthShort = d.toLocaleString('en-US', { month: 'short' });
+      const dateStr = `${monthShort} ${d.getDate()}`;
+      return {
+        date: dateStr,
+        day: dayNames[i],
+        meals: weeklyMealPlan[i]?.meals || [],
+      };
+    });
+    return plan;
+  };
+
+  const currentWeekPlan = buildCurrentWeekPlan();
